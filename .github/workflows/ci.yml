@@ -1,24 +1,105 @@
-name: CI
+name: TaskFlow CI
 
 on:
   push:
+    branches: [ "main" ]
   pull_request:
+    branches: [ "main" ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v3
+    # -------------------------
+    # 1. Checkout
+    # -------------------------
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 20
+    # -------------------------
+    # 2. Node.js
+    # -------------------------
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 20
 
-      - run: npm install
+    # -------------------------
+    # 3. Instalar Backend
+    # -------------------------
+    - name: Install backend dependencies
+      working-directory: ./backend
+      run: npm ci
 
-      - name: Enable ESM support for Jest
-        run: echo "NODE_OPTIONS=--experimental-vm-modules" >> $GITHUB_ENV
+    # -------------------------
+    # 4. Instalar Frontend
+    # -------------------------
+    - name: Install frontend dependencies
+      working-directory: ./frontend
+      run: npm ci
 
-      - name: Run unit tests (jest)
-        run: npm test -- --runInBand
+    # -------------------------
+    # 5. Configurar soporte ESM para Jest
+    # -------------------------
+    - name: Enable ESM for Jest
+      run: echo "NODE_OPTIONS=--experimental-vm-modules" >> $GITHUB_ENV
+
+    # -------------------------
+    # 6. Unit + Integration tests
+    # -------------------------
+    - name: Run Jest tests
+      working-directory: ./backend
+      run: npm test -- --runInBand
+
+    # -------------------------
+    # 7. Instalar Playwright
+    # -------------------------
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps
+
+    # -------------------------
+    # 8. Levantar Backend para E2E
+    # -------------------------
+    - name: Start backend
+      working-directory: ./backend
+      run: nohup npm start &
+
+    # -------------------------
+    # 9. Levantar Frontend
+    # -------------------------
+    - name: Start frontend
+      working-directory: ./frontend
+      run: nohup npm run dev &
+
+    - name: Wait for servers
+      run: sleep 5
+
+    # -------------------------
+    # 10. Playwright Tests
+    # -------------------------
+    - name: Run Playwright tests
+      run: npx playwright test
+
+    # -------------------------
+    # 11. Guardar reporte Playwright
+    # -------------------------
+    - name: Upload Playwright report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: playwright-report
+        path: playwright-report
+
+    # -------------------------
+    # 12. Instalar k6
+    # -------------------------
+    - name: Install k6
+      run: sudo apt-get update && sudo apt-get install -y k6
+
+    # -------------------------
+    # 13. Run Load Tests
+    # -------------------------
+    - name: Run k6 load tests
+      run: k6 run load-tests/test.js
