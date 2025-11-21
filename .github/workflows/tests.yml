@@ -1,0 +1,83 @@
+name: CI - TaskFlow Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    # -------------------------
+    # 1. Configuración de Node.js
+    # -------------------------
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+
+    # -------------------------
+    # 2. Instalar dependencias Backend
+    # -------------------------
+    - name: Install backend dependencies
+      working-directory: backend
+      run: npm install
+
+    # -------------------------
+    # 3. Instalar dependencias Frontend
+    # -------------------------
+    - name: Install frontend dependencies
+      working-directory: frontend
+      run: npm install
+
+    # -------------------------
+    # 4. Levantar backend
+    # -------------------------
+    - name: Start backend
+      working-directory: backend
+      run: nohup npm run dev &
+    
+    # -------------------------
+    # 5. Levantar frontend
+    # -------------------------
+    - name: Start frontend
+      working-directory: frontend
+      run: nohup npm run dev &
+    
+    # Esperar que los servidores levanten
+    - name: Wait for servers
+      run: sleep 5
+
+    # -------------------------
+    # 6. Pruebas E2E con Playwright
+    # -------------------------
+    - name: Install Playwright
+      run: npx playwright install --with-deps
+
+    - name: Run Playwright tests
+      run: npx playwright test
+
+    # -------------------------
+    # 7. Pruebas de carga con k6
+    # -------------------------
+    - name: Install k6
+      run: sudo apt-get update && sudo apt-get install -y k6
+
+    - name: Run k6 load tests
+      run: k6 run load-tests/test.js
+
+    # -------------------------
+    # 8. Guardar reportes Playwright
+    # -------------------------
+    - name: Upload test report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: playwright-report
+        path: playwright-report

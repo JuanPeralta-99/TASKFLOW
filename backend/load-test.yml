@@ -1,0 +1,14 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 30
+      arrivalRate: 5  # 5 solicitudes por segundo
+scenarios:
+  - name: "Test de carga de tareas"
+    flow:
+      - get:
+          url: "/tasks"
+      - post:
+          url: "/tasks"
+          json:
+            title: "Tarea de prueba de carga {{ $randomString(5) }}"
