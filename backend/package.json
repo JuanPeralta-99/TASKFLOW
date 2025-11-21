@@ -10,7 +10,9 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "jest",
+
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
+
     "load-test": "artillery run load-test.yml"
   },
   "keywords": [],
