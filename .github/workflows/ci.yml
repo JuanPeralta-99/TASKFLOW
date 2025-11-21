@@ -23,7 +23,7 @@ jobs:
 
       - name: Install backend dependencies
         working-directory: ./backend
-        run: npm ci
+        run: npm install
 
       - name: Run unit tests (Jest)
         working-directory: ./backend
@@ -52,7 +52,7 @@ jobs:
       # ---------- Backend ----------
       - name: Install backend dependencies
         working-directory: ./backend
-        run: npm ci
+        run: npm install
 
       - name: Start backend server
         working-directory: ./backend
@@ -61,7 +61,7 @@ jobs:
       # ---------- Frontend ----------
       - name: Install frontend dependencies
         working-directory: ./frontend
-        run: npm ci
+        run: npm install
 
       - name: Build frontend
         working-directory: ./frontend
